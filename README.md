@@ -1,7 +1,7 @@
 
 # CopyAll: Extract and Copy Directory Contents to Clipboard
 
-`CopyAll` is a Python script designed to extract content from various file types within a directory and copy the aggregated content to your clipboard. It's especially useful for submitting code or text files to Large Language Models (LLMs) like [Claude.ai](https://www.anthropic.com/claude) for analysis or processing.
+`CopyAll` is a Python script designed to extract content from various file types within a directory and copy the aggregated content to your clipboard. It's especially useful for submitting code or text files to Large Language Models (LLMs) like [Claude.ai](https://claude.ai) for analysis or processing.
 
 ## Features
 

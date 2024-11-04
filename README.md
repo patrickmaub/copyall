@@ -49,8 +49,8 @@
    To run the script as a command-line tool, modify its permissions and move it to a directory in your system's `PATH`:
 
    ```bash
-   chmod +x copyall.py
-   sudo mv copyall.py /usr/local/bin/copyall
+   chmod +x copyall
+   sudo mv copyall /usr/local/bin/copyall
    ```
 
    This setup allows you to run the script from anywhere by simply typing `copyall`.

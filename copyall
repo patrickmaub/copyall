@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import argparse
+import pyperclip
+from pathlib import Path
+from PyPDF2 import PdfReader
+import docx  # For processing .docx files
+
+def save_clipboard(backup_file):
+    try:
+        content = pyperclip.paste()
+        with open(backup_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except Exception as e:
+        print(f"Error saving clipboard content: {e}")
+
+def restore_clipboard(backup_file):
+    try:
+        with open(backup_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        pyperclip.copy(content)
+        print("Clipboard content restored from backup.")
+    except FileNotFoundError:
+        print(f"No clipboard backup found at '{backup_file}'.")
+    except Exception as e:
+        print(f"Error restoring clipboard content: {e}")
+
+def process_text_file(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()
+    except Exception as e:
+        return f"Error reading {file_path}: {e}"
+
+def process_docx_file(file_path):
+    try:
+        doc = docx.Document(file_path)
+        fullText = []
+        for para in doc.paragraphs:
+            fullText.append(para.text)
+        return '\n'.join(fullText)
+    except Exception as e:
+        return f"Error reading {file_path}: {e}"
+
+def process_pdf_file(file_path):
+    try:
+        reader = PdfReader(file_path)
+        text = ''
+        for page in reader.pages:
+            text += page.extract_text() or ''
+        return text
+    except Exception as e:
+        return f"Error reading {file_path}: {e}"
+
+def main():
+    parser = argparse.ArgumentParser(description='Extract content from various file types and copy to clipboard.')
+    parser.add_argument('directory', nargs='?', default='.', help='Directory to process. Defaults to current directory.')
+    parser.add_argument('-e', '--extensions', help='Comma-separated list of file extensions to include (e.g., py,js,md).')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output.')
+    parser.add_argument('-s', '--save', action='store_true', help='Save current clipboard content before copying new content.')
+    parser.add_argument('-r', '--restore', action='store_true', help='Restore previously saved clipboard content.')
+    args = parser.parse_args()
+
+    clipboard_backup = os.path.expanduser('~/.copyall_clipboard_backup.txt')
+
+    if args.restore:
+        restore_clipboard(clipboard_backup)
+        sys.exit(0)
+
+    target_dir = args.directory
+    if not os.path.isdir(target_dir):
+        print(f"Error: '{target_dir}' is not a directory or does not exist.")
+        sys.exit(1)
+
+    if args.save:
+        save_clipboard(clipboard_backup)
+        if args.verbose:
+            print(f"Current clipboard content saved to '{clipboard_backup}'.")
+
+    # Default extensions
+    default_extensions = [
+        'md', 'py', 'js', 'tsx', 'applescript', 'txt', 'c', 'cpp', 'java', 'rb', 'go', 'rs', 'php',
+        'html', 'css', 'swift', 'kt', 'scala', 'pl', 'sh', 'bat', 'ps1', 'lua', 'json', 'xml', 'yml',
+        'yaml', 'csv', 'ts', 'jsx', 'sql', 'dart', 'm', 'mm'
+    ]
+
+    # Document extensions
+    doc_extensions = ['doc', 'docx', 'pdf']
+
+    if args.extensions:
+        extensions = [ext.strip().lower() for ext in args.extensions.split(',')]
+    else:
+        extensions = default_extensions + doc_extensions
+
+    if args.verbose:
+        print(f"Using file extensions: {extensions}")
+        print(f"Searching for files in '{target_dir}'...")
+
+    # Collect files
+    collected_files = []
+    for root, dirs, files in os.walk(target_dir):
+        for file in files:
+            file_ext = file.lower().split('.')[-1]
+            if file_ext in extensions:
+                file_path = os.path.join(root, file)
+                collected_files.append(file_path)
+                if args.verbose:
+                    print(f"Found file: {file_path}")
+
+    if not collected_files:
+        print(f"No files found with the specified extensions in '{target_dir}'.")
+        sys.exit(0)
+
+    # Process files
+    content = ''
+    for file_path in collected_files:
+        filename = os.path.basename(file_path)
+        file_ext = filename.lower().split('.')[-1]
+
+        if args.verbose:
+            print(f"Processing '{filename}'...")
+
+        content += f"===== {filename} =====\n"
+
+        if file_ext in default_extensions:
+            content += process_text_file(file_path)
+        elif file_ext == 'docx':
+            content += process_docx_file(file_path)
+        elif file_ext == 'pdf':
+            content += process_pdf_file(file_path)
+        else:
+            content += f"Unsupported file type for '{filename}'. Skipping."
+
+        content += '\n\n'
+
+    # Copy content to clipboard
+    try:
+        pyperclip.copy(content)
+        if args.verbose:
+            print("All content has been copied to the clipboard.")
+    except Exception as e:
+        print(f"Error copying content to clipboard: {e}")
+
+if __name__ == '__main__':
+    main()
+
